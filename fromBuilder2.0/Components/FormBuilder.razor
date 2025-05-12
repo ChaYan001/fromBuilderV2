@@ -9,7 +9,7 @@
             <div class="toolbox-panel">
                 <h3 class="panel-title">Form Elements</h3>
                 <p class="panel-subtitle">Drag elements to the canvas</p>
-                
+
                 <div class="drag-elements">
                     @foreach (var elementType in ElementTypes)
                     {
@@ -24,15 +24,15 @@
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-6">
+
+        <div class="col-md-@(ShowPropertiesPanel && SelectedElement != null ? "5" : "4")">
             <div class="form-canvas"
                  @ondragover="HandleDragOver"
-                 @ondragover:preventDefault
-                 @ondragover:stopPropagation
+            @ondragover:preventDefault
+            @ondragover:stopPropagation
                  @ondrop="HandleDrop">
                 <h3>Form Canvas</h3>
-                
+
                 @if (!FormElements.Any())
                 {
                     <div class="empty-canvas">
@@ -40,140 +40,163 @@
                         <p>Drag and drop elements from the left panel to build your form</p>
                     </div>
                 }
-                
-                @foreach (var element in FormElements)
+                else
                 {
-                    <div class="form-element-container @(SelectedElement == element ? "selected" : "")" 
-                         @onclick="() => SelectElement(element)"
-                         @key="element.Id">
-                        <div class="form-element-header">
-                            <div class="element-info">
-                                <i class="@GetIconForType(element.Type)" aria-hidden="true"></i>
-                                <span>@element.Label</span>
-                            </div>
-                            <button type="button" class="element-remove" @onclick:stopPropagation="true" @onclick="() => RemoveElement(element)">
-                                <span>&times;</span>
-                            </button>
-                        </div>
-                        
-                        <div class="form-element-preview">
-                            @switch (element.Type)
-                            {
-                                case "TextBox":
-                                    <DxTextBox NullText="@((element as TextBoxElement)?.Placeholder ?? "Enter text")" 
-                                              Enabled="false" />
-                                    break;
-                                case "DropDown":
-                                    <DxComboBox TData="DropDownOption"
-                                                TValue="string"
-                                                Data="@((element as DropDownElement)?.Options ?? new List<DropDownOption>())"
-                                                TextFieldName="Label"
-                                                ValueFieldName="Value"
-                                                NullText="Select an option"
-                                                Enabled="false" />
-                                    break;
-                                case "DatePicker":
-                                    <DxDateEdit Date="DateTime.Now" 
-                                               Enabled="false" />
-                                    break;
-                                default:
-                                    <div>Unknown element type: @element.Type</div>
-                                    break;
-                            }
-                        </div>
-                        
-                        @if (element.Required)
+                    <DxFormLayout>
+                        @foreach (var element in FormElements)
                         {
-                            <div class="required-indicator">Required</div>
+                            <DxFormLayoutItem ColSpanXs="@element.ColSpanXS"
+                                              ColSpanSm="@element.ColSpanSM"
+                                              ColSpanMd="@element.ColSpanMD"
+                                              ColSpanLg="@element.ColSpanLG"
+                                              CssClass="form-element-wrapper">
+                                <div class="form-element-container @(SelectedElement == element ? "selected" : "")"
+                                     @onclick="() => SelectElement(element)"
+                                     @ondblclick="() => OpenPropertiesPanel(element)"
+                                     @key="element.Id">
+                                    <div class="form-element-header">
+                                        <div class="element-info">
+                                            <i class="@GetIconForType(element.Type)" aria-hidden="true"></i>
+                                            <span>@element.Label</span>
+                                        </div>
+                                        <button type="button" class="element-remove" @onclick:stopPropagation="true" @onclick="() => RemoveElement(element)">
+                                            <span>&times;</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="form-element-preview">
+                                        @switch (element.Type)
+                                        {
+                                            case "TextBox":
+                                                <DxTextBox NullText="@((element as TextBoxElement)?.Placeholder ?? "Enter text")"
+                                                           Enabled="false" />
+                                                break;
+                                            case "DropDown":
+                                                <DxComboBox TData="DropDownOption"
+                                                            TValue="string"
+                                                            Data="@((element as DropDownElement)?.Options ?? new List<DropDownOption>())"
+                                                            TextFieldName="Label"
+                                                            ValueFieldName="Value"
+                                                            NullText="Select an option"
+                                                            Enabled="false" />
+                                                break;
+                                            case "DatePicker":
+                                                <DxDateEdit Date="DateTime.Now"
+                                                            Enabled="false" />
+                                                break;
+                                            default:
+                                                <div>Unknown element type: @element.Type</div>
+                                                break;
+                                        }
+                                    </div>
+
+                                    @if (element.Required)
+                                    {
+                                        <div class="required-indicator">Required</div>
+                                    }
+                                </div>
+                            </DxFormLayoutItem>
                         }
-                    </div>
+                    </DxFormLayout>
                 }
             </div>
-            
+
             <div class="form-actions">
-                <DxButton Text="Preview Form" 
-                          ButtonType="ButtonType.Button"
-                          RenderStyle="ButtonRenderStyle.Primary"
-                          Click="PreviewForm" />
-                          
-                <DxButton Text="Export JSON Schema" 
+                <DxButton Text="Export JSON Schema"
                           ButtonType="ButtonType.Button"
                           RenderStyle="ButtonRenderStyle.Secondary"
                           Click="ExportSchema" />
             </div>
         </div>
-        
-        <div class="col-md-3">
-            @if (SelectedElement != null)
+
+        <div class="col-md-@(ShowPropertiesPanel && SelectedElement != null ? "4" : "5")">
+            @if (ShowPropertiesPanel && SelectedElement != null)
             {
-                <FormElementEditor Element="SelectedElement" OnPropertyChanged="HandlePropertyChanged" />
+                <div class="properties-panel">
+                    <div class="properties-panel-header">
+                        <h3>Properties: @SelectedElement.Type</h3>
+                        <button type="button" class="properties-panel-close" @onclick="ClosePropertiesPanel">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <FormElementEditor Element="SelectedElement" OnPropertyChanged="HandlePropertyChanged" />
+                </div>
             }
             else
             {
-                <div class="no-element-selected">
-                    <i class="fa fa-info-circle" aria-hidden="true"></i>
-                    <p>Select an element to edit its properties</p>
+                <div class="live-preview-panel">
+                    <div class="live-preview-header">
+                        <h3>Live Preview</h3>
+                    </div>
+                    <div class="form-preview">
+                        @if (!FormElements.Any())
+                        {
+                            <div class="empty-preview">
+                                <i class="fa fa-eye" aria-hidden="true"></i>
+                                <p>Add form elements to see a live preview</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <DxFormLayout>
+                                @foreach (var element in FormElements)
+                                {
+                                    <DxFormLayoutItem ColSpanXs="@element.ColSpanXS"
+                                                      ColSpanSm="@element.ColSpanSM"
+                                                      ColSpanMd="@element.ColSpanMD"
+                                                      ColSpanLg="@element.ColSpanLG"
+                                                      Caption="@element.Label">
+                                        @switch (element.Type)
+                                        {
+                                            case "TextBox":
+                                                var textBox = element as TextBoxElement;
+                                                <DxTextBox NullText="@(textBox?.Placeholder ?? "")"
+                                                           Enabled="true" />
+                                                break;
+                                            case "DropDown":
+                                                var dropDown = element as DropDownElement;
+                                                <DxComboBox TData="DropDownOption"
+                                                            TValue="string"
+                                                            Data="@(dropDown?.Options ?? new List<DropDownOption>())"
+                                                            TextFieldName="Label"
+                                                            ValueFieldName="Value"
+                                                            NullText="Select an option"
+                                                            Enabled="true" />
+                                                break;
+                                            case "DatePicker":
+                                                var datePicker = element as DatePickerElement;
+                                                <DxDateEdit Date="DateTime.Now"
+                                                            Format="@(datePicker?.Format ?? "MM/dd/yyyy")"
+                                                            Enabled="true" />
+                                                break;
+                                        }
+
+                                        @if (element.Required)
+                                        {
+                                            <div class="required-field-indicator">*</div>
+                                        }
+                                    </DxFormLayoutItem>
+                                }
+                            </DxFormLayout>
+
+                            <div class="mt-4">
+                                <DxButton Text="Submit"
+                                          ButtonType="ButtonType.Button"
+                                          RenderStyle="ButtonRenderStyle.Primary" />
+                            </div>
+                        }
+                    </div>
                 </div>
             }
         </div>
     </div>
-    
+
     <DxPopup @bind-Visible="@IsSchemaPopupVisible"
              HeaderText="JSON Schema"
              Width="800px"
              Height="500px">
         <Content>
             <pre>@ExportedSchema</pre>
-        </Content>
-    </DxPopup>
-    
-    <DxPopup @bind-Visible="@IsPreviewPopupVisible"
-             HeaderText="Form Preview"
-             Width="800px"
-             Height="500px">
-        <Content>
-            <div class="form-preview">
-                @foreach (var element in FormElements)
-                {
-                    <div class="mb-3">
-                        <label class="form-label">@element.Label</label>
-                        
-                        @switch (element.Type)
-                        {
-                            case "TextBox":
-                                var textBox = element as TextBoxElement;
-                                <DxTextBox NullText="@(textBox?.Placeholder ?? "")"
-                                          Enabled="true" />
-                                break;
-                            case "DropDown":
-                                var dropDown = element as DropDownElement;
-                                <DxComboBox TData="DropDownOption"
-                                            TValue="string"
-                                            Data="@(dropDown?.Options ?? new List<DropDownOption>())"
-                                            TextFieldName="Label"
-                                            ValueFieldName="Value"
-                                            NullText="Select an option"
-                                            Enabled="true" />
-                                break;
-                            case "DatePicker":
-                                var datePicker = element as DatePickerElement;
-                                <DxDateEdit Date="DateTime.Now"
-                                           Format="@(datePicker?.Format ?? "MM/dd/yyyy")"
-                                           Enabled="true" />
-                                break;
-                        }
-                        
-                        @if (element.Required)
-                        {
-                            <div class="form-text text-danger">This field is required</div>
-                        }
-                    </div>
-                }
-                
-                <DxButton Text="Submit" 
-                          ButtonType="ButtonType.Button"
-                          RenderStyle="ButtonRenderStyle.Primary" />
-            </div>
         </Content>
     </DxPopup>
 </div>
@@ -183,19 +206,19 @@
     private FormElement? SelectedElement { get; set; }
     private FormElement? DraggedElement { get; set; }
     private bool IsSchemaPopupVisible { get; set; } = false;
-    private bool IsPreviewPopupVisible { get; set; } = false;
     private string ExportedSchema { get; set; } = string.Empty;
     private string? DraggedElementType { get; set; }
-    
+    private bool ShowPropertiesPanel { get; set; } = false;
+
     // List of available element types
     private List<string> ElementTypes = new() { "TextBox", "DropDown", "DatePicker" };
-    
+
     [Parameter]
     public string? InitialSchema { get; set; }
-    
+
     [Parameter]
     public EventCallback<string> OnSchemaChanged { get; set; }
-    
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -204,7 +227,7 @@
             await JSRuntime.InvokeVoidAsync("console.log", "Form Builder initialized");
         }
     }
-    
+
     protected override void OnInitialized()
     {
         if (!string.IsNullOrEmpty(InitialSchema))
@@ -219,7 +242,7 @@
         Console.WriteLine($"Starting drag for {elementType}");
         DraggedElementType = elementType;
     }
-    
+
     private void HandleDragOver()
     {
         // Visual feedback can be added here if needed
@@ -228,21 +251,27 @@
     private void HandleDrop()
     {
         Console.WriteLine($"Drop detected with element type: {DraggedElementType}");
-        
+
         if (!string.IsNullOrEmpty(DraggedElementType))
         {
             var element = SchemaService.CreateElementFromType(DraggedElementType);
-            
+
             // Set default properties
             element.Label = $"New {DraggedElementType}";
             element.Name = $"{DraggedElementType.ToLower()}_{DateTime.Now.Ticks}";
-            
+
+            // Set default responsive column spans
+            element.ColSpanXS = 12;
+            element.ColSpanSM = 6;
+            element.ColSpanMD = 6;
+            element.ColSpanLG = 4;
+
             FormElements.Add(element);
             NotifySchemaChanged();
-            
+
             // Clear the dragged element type
             DraggedElementType = null;
-            
+
             StateHasChanged();
         }
         else if (DraggedElement != null)
@@ -265,15 +294,29 @@
         StateHasChanged();
     }
 
+    private void OpenPropertiesPanel(FormElement element)
+    {
+        SelectedElement = element;
+        ShowPropertiesPanel = true;
+        StateHasChanged();
+    }
+
+    private void ClosePropertiesPanel()
+    {
+        ShowPropertiesPanel = false;
+        StateHasChanged();
+    }
+
     private void RemoveElement(FormElement element)
     {
         FormElements.Remove(element);
-        
+
         if (SelectedElement == element)
         {
             SelectedElement = null;
+            ShowPropertiesPanel = false;
         }
-        
+
         NotifySchemaChanged();
     }
 
@@ -294,11 +337,6 @@
         IsSchemaPopupVisible = true;
     }
 
-    private void PreviewForm()
-    {
-        IsPreviewPopupVisible = true;
-    }
-    
     private string GetIconForType(string elementType) => elementType switch
     {
         "TextBox" => "fa fa-font",
@@ -309,10 +347,138 @@
 }
 
 <style>
+    /* Properties Panel Styles */
+    .properties-panel {
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        background-color: #f8f9fa;
+        padding: 1rem;
+        position: relative;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    .properties-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+        .properties-panel-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+    .properties-panel-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        line-height: 1;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 0;
+    }
+
+        .properties-panel-close:hover {
+            color: #dc3545;
+        }
+
+    .no-element-selected {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        height: 200px;
+        background-color: #f8f9fa;
+        border: 1px dashed #dee2e6;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        color: #6c757d;
+    }
+
+        .no-element-selected i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+    /* Live Preview Panel Styles */
+    .live-preview-panel {
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        background-color: #ffffff;
+        padding: 1rem;
+        position: relative;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        height: 100%;
+        overflow-y: auto;
+        min-height: 600px;
+    }
+
+    .live-preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+        .live-preview-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #3b82f6;
+        }
+
+    .empty-preview {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        height: 300px;
+        background-color: #f9fafb;
+        border: 1px dashed #e5e7eb;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        color: #6b7280;
+    }
+
+        .empty-preview i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #9ca3af;
+        }
+
+    .required-field-indicator {
+        color: #ef4444;
+        margin-left: 4px;
+        font-weight: bold;
+    }
+
+    /* Element hover effect to indicate double-click functionality */
+    .form-element-container {
+        transition: all 0.2s ease;
+    }
+
+        .form-element-container:hover {
+            cursor: pointer;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+        }
+
+        /* Additional styling for the selected state */
+        .form-element-container.selected {
+            border: 2px solid #007bff;
+        }
+
     .form-builder-container {
         margin: 20px;
     }
-    
+
     /* Toolbox panel styling */
     .toolbox-panel {
         border: 1px solid #d1d5db;
@@ -321,26 +487,27 @@
         background-color: #f9fafb;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         margin-bottom: 20px;
+        height: 100%;
     }
-    
+
     .panel-title {
         margin-top: 0;
         color: #1f2937;
         font-size: 1.25rem;
     }
-    
+
     .panel-subtitle {
         color: #6b7280;
         margin-bottom: 16px;
         font-size: 0.875rem;
     }
-    
+
     .drag-elements {
         display: flex;
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .drag-element {
         background-color: white;
         border: 2px solid #e5e7eb;
@@ -353,18 +520,18 @@
         transition: all 0.2s ease;
         user-select: none;
     }
-    
-    .drag-element:hover {
-        border-color: #3b82f6;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    
-    .drag-element i {
-        color: #3b82f6;
-        font-size: 1.125rem;
-    }
-    
+
+        .drag-element:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .drag-element i {
+            color: #3b82f6;
+            font-size: 1.125rem;
+        }
+
     /* Form canvas styling */
     .form-canvas {
         min-height: 600px;
@@ -375,12 +542,12 @@
         position: relative;
         transition: all 0.2s ease;
     }
-    
-    .form-canvas:hover {
-        border-color: #3b82f6;
-        background-color: #f8fafc;
-    }
-    
+
+        .form-canvas:hover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+
     .empty-canvas {
         display: flex;
         flex-direction: column;
@@ -389,20 +556,24 @@
         height: 300px;
         color: #9ca3af;
     }
-    
-    .empty-canvas i {
-        font-size: 2rem;
-        margin-bottom: 16px;
-        color: #6b7280;
+
+        .empty-canvas i {
+            font-size: 2rem;
+            margin-bottom: 16px;
+            color: #6b7280;
+        }
+
+        .empty-canvas p {
+            text-align: center;
+            font-size: 1rem;
+        }
+
+    .form-element-wrapper {
+        padding: 4px;
     }
-    
-    .empty-canvas p {
-        text-align: center;
-        font-size: 1rem;
-    }
-    
+
     .form-element-container {
-        margin-bottom: 16px;
+        margin-bottom: 0;
         border: 1px solid #e5e7eb;
         border-radius: 6px;
         padding: 16px;
@@ -410,28 +581,29 @@
         transition: all 0.2s ease;
         background-color: white;
         position: relative;
+        height: 100%;
     }
-    
-    .form-element-container:hover {
-        border-color: #60a5fa;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
-    }
-    
-    .form-element-container.selected {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-    }
-    
+
+        .form-element-container:hover {
+            border-color: #60a5fa;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+        }
+
+        .form-element-container.selected {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
     .element-info {
         display: flex;
         align-items: center;
         gap: 8px;
     }
-    
-    .element-info i {
-        color: #3b82f6;
-    }
-    
+
+        .element-info i {
+            color: #3b82f6;
+        }
+
     .form-element-header {
         display: flex;
         justify-content: space-between;
@@ -439,7 +611,7 @@
         margin-bottom: 12px;
         font-weight: 500;
     }
-    
+
     .element-remove {
         width: 28px;
         height: 28px;
@@ -454,18 +626,18 @@
         color: #6b7280;
         transition: all 0.2s;
     }
-    
-    .element-remove:hover {
-        background: #ef4444;
-        color: white;
-    }
-    
+
+        .element-remove:hover {
+            background: #ef4444;
+            color: white;
+        }
+
     .form-element-preview {
         padding: 10px;
         background-color: #f9fafb;
         border-radius: 4px;
     }
-    
+
     .required-indicator {
         position: absolute;
         top: 16px;
@@ -476,31 +648,23 @@
         padding: 2px 8px;
         border-radius: 4px;
     }
-    
+
     .form-actions {
         margin-top: 24px;
         display: flex;
         gap: 12px;
         justify-content: flex-end;
     }
-    
-    .no-element-selected {
-        border: 1px solid #e5e7eb;
-        padding: 24px;
-        border-radius: 8px;
-        text-align: center;
-        color: #6b7280;
-        background-color: #f9fafb;
-        height: 300px;
+
+    /* Make sure the row has proper height */
+    .row {
+        min-height: 700px;
+    }
+
+    /* Make the columns equal height */
+    .col-md-3, .col-md-4, .col-md-5 {
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
     }
-    
-    .no-element-selected i {
-        font-size: 2rem;
-        margin-bottom: 16px;
-        color: #9ca3af;
-    }
+
 </style>

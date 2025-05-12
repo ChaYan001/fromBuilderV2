@@ -1,8 +1,6 @@
 ﻿@using fromBuilder2.Models
 
 <div class="property-editor">
-    <h3>Properties: @Element.Type</h3>
-
     <div class="mb-3">
         <label class="form-label">Label</label>
         <DxTextBox @bind-Text="@Element.Label"
@@ -119,6 +117,51 @@
             }
             break;
     }
+    <div class="mb-4">
+        <h4 class="responsive-layout-title">Responsive Layout</h4>
+        <div class="responsive-layout-grid">
+            <div class="responsive-layout-item">
+                <label class="form-label">XS <small>(Phone)</small></label>
+                <DxSpinEdit @bind-Value="@Element.ColSpanXS"
+                            MinValue="1"
+                            MaxValue="12"
+                            Step="1"
+                            ShowSpinButtons="true"
+                            CssClass="responsive-spin" />
+            </div>
+            <div class="responsive-layout-item">
+                <label class="form-label">SM <small>(Tablet)</small></label>
+                <DxSpinEdit @bind-Value="@Element.ColSpanSM"
+                            MinValue="1"
+                            MaxValue="12"
+                            Step="1"
+                            ShowSpinButtons="true"
+                            CssClass="responsive-spin" />
+            </div>
+            <div class="responsive-layout-item">
+                <label class="form-label">MD <small>(Laptop)</small></label>
+                <DxSpinEdit @bind-Value="@Element.ColSpanMD"
+                            MinValue="1"
+                            MaxValue="12"
+                            Step="1"
+                            ShowSpinButtons="true"
+                            CssClass="responsive-spin" />
+            </div>
+            <div class="responsive-layout-item">
+                <label class="form-label">LG <small>(Desktop)</small></label>
+                <DxSpinEdit @bind-Value="@Element.ColSpanLG"
+                            MinValue="1"
+                            MaxValue="12"
+                            Step="1"
+                            ShowSpinButtons="true"
+                            CssClass="responsive-spin" />
+            </div>
+        </div>
+        <div class="responsive-layout-hint">
+            <i class="fa fa-info-circle"></i>
+            <small>Values represent columns in a 12-column grid</small>
+        </div>
+    </div>
 
     <h4 class="mt-4 mb-2">Validation Rules</h4>
     @foreach (var rule in Element.ValidationRules)
@@ -174,6 +217,15 @@
     private string NewValidationValue = string.Empty;
     private string NewValidationMessage = string.Empty;
 
+    protected override void OnInitialized()
+    {
+        // Ensure the responsive layout properties are initialized with default values if not set
+        if (Element.ColSpanXS <= 0) Element.ColSpanXS = 12;
+        if (Element.ColSpanSM <= 0) Element.ColSpanSM = 6;
+        if (Element.ColSpanMD <= 0) Element.ColSpanMD = 6;
+        if (Element.ColSpanLG <= 0) Element.ColSpanLG = 4;
+    }
+
     private async Task NotifyChange()
     {
         await OnPropertyChanged.InvokeAsync();
@@ -208,8 +260,8 @@
             {
                 Type = NewValidationType,
                 Message = string.IsNullOrWhiteSpace(NewValidationMessage)
-                    ? $"Value does not meet {NewValidationType} validation"
-                    : NewValidationMessage
+                            ? $"Value does not meet {NewValidationType} validation"
+                            : NewValidationMessage
             };
 
         if (!string.IsNullOrWhiteSpace(NewValidationValue))
@@ -279,4 +331,44 @@
         font-weight: bold;
         background-color: #e9ecef;
     }
+
+    /* Responsive Layout Styling */
+    .responsive-layout-title {
+        margin-bottom: 10px;
+        color: #1f2937;
+        font-size: 1.1rem;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 8px;
+    }
+
+    .responsive-layout-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .responsive-layout-item {
+        position: relative;
+    }
+
+        .responsive-layout-item label small {
+            color: #6b7280;
+        }
+
+    .responsive-spin {
+        width: 100%;
+    }
+
+    .responsive-layout-hint {
+        margin-top: 8px;
+        font-size: 0.85rem;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .responsive-layout-hint i {
+            color: #3b82f6;
+        }
 </style>

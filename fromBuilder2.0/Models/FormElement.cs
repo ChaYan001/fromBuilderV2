@@ -11,6 +11,12 @@
         public object? DefaultValue { get; set; }
         public List<ValidationRule> ValidationRules { get; set; } = new List<ValidationRule>();
         public Dictionary<string, object> AdditionalProperties { get; set; } = new Dictionary<string, object>();
+
+        // Added responsive layout properties
+        public int ColSpanXS { get; set; } = 12;
+        public int ColSpanSM { get; set; } = 6;
+        public int ColSpanMD { get; set; } = 6;
+        public int ColSpanLG { get; set; } = 4;
     }
 
     public class ValidationRule
@@ -26,7 +32,6 @@
         {
             Type = "TextBox";
         }
-
         public bool Multiline { get; set; }
         public int? MaxLength { get; set; }
         public string InputMode { get; set; } = "text";
@@ -38,7 +43,6 @@
         {
             Type = "DropDown";
         }
-
         public List<DropDownOption> Options { get; set; } = new List<DropDownOption>();
         public bool AllowMultiple { get; set; }
     }
@@ -55,7 +59,6 @@
         {
             Type = "DatePicker";
         }
-
         public DateTime? MinDate { get; set; }
         public DateTime? MaxDate { get; set; }
         public string Format { get; set; } = "MM/dd/yyyy";

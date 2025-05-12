@@ -24,28 +24,28 @@
         </div>
     </DxTabPage>
     
-    <DxTabPage Text="Import Schema">
-        <div class="p-3">
-            <h3>Import JSON Schema</h3>
-            <p>Paste your JSON schema here to import:</p>
+    @* <DxTabPage Text="Import Schema"> *@
+    @*     <div class="p-3"> *@
+    @*         <h3>Import JSON Schema</h3> *@
+    @*         <p>Paste your JSON schema here to import:</p> *@
             
-            <DxMemo @bind-Text="@ImportSchemaText"
-                   SizeMode="SizeMode.Large"
-                   Height="400px" />
+    @*         <DxMemo @bind-Text="@ImportSchemaText" *@
+    @*                SizeMode="SizeMode.Large" *@
+    @*                Height="400px" /> *@
                    
-            <div class="mt-3">
-                <DxButton Text="Import Schema" 
-                         RenderStyle="ButtonRenderStyle.Primary"
-                         Click="ImportSchema" />
-            </div>
-        </div>
-    </DxTabPage>
+    @*         <div class="mt-3"> *@
+    @*             <DxButton Text="Import Schema"  *@
+    @*                      RenderStyle="ButtonRenderStyle.Primary" *@
+    @*                      Click="ImportSchema" /> *@
+    @*         </div> *@
+    @*     </div> *@
+    @* </DxTabPage> *@
 </DxTabs>
 
 @code {
     private string InitialSchema { get; set; } = string.Empty;
     private string CurrentSchema { get; set; } = string.Empty;
-    private string ImportSchemaText { get; set; } = string.Empty;
+    // private string ImportSchemaText { get; set; } = string.Empty;
     
     protected override void OnInitialized()
     {
@@ -73,15 +73,15 @@
         CurrentSchema = schema;
     }
     
-    private void ImportSchema()
-    {
-        if (!string.IsNullOrWhiteSpace(ImportSchemaText))
-        {
-            InitialSchema = ImportSchemaText;
-            CurrentSchema = ImportSchemaText;
+    // private void ImportSchema()
+    // {
+    //     if (!string.IsNullOrWhiteSpace(ImportSchemaText))
+    //     {
+    //         InitialSchema = ImportSchemaText;
+    //         CurrentSchema = ImportSchemaText;
             
-            // Force re-render of form builder with new schema
-            StateHasChanged();
-        }
-    }
+    //         Force re-render of form builder with new schema
+    //         StateHasChanged();
+    //     }
+    // }
 }
