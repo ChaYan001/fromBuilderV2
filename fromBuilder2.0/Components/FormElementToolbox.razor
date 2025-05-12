@@ -1,0 +1,98 @@
+﻿@using fromBuilder2.Models
+@using fromBuilder2.Services
+@inject IFormSchemaService SchemaService
+@inject IJSRuntime JSRuntime
+
+<div class="toolbox-container">
+    <h3>Form Elements</h3>
+    <div class="toolbox-elements">
+        @foreach (var elementType in ElementTypes)
+        {
+            <div class="toolbox-element"
+                 draggable="true"
+                 @ondragstart="@(e => OnDragStart(e, elementType))"
+                 @key="elementType">
+                <i class="@GetIconForType(elementType)" aria-hidden="true"></i>
+                <span>@elementType</span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<FormElement> OnElementDragged { get; set; }
+
+    private List<string> ElementTypes = new() { "TextBox", "DropDown", "DatePicker" };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize drag and drop via JS interop if needed
+            await JSRuntime.InvokeVoidAsync("console.log", "FormElementToolbox rendered");
+        }
+    }
+
+    private async Task OnDragStart(DragEventArgs args, string elementType)
+    {
+        Console.WriteLine($"Dragging element: {elementType}");
+
+        var element = SchemaService.CreateElementFromType(elementType);
+
+        // Set default properties
+        element.Label = $"New {elementType}";
+        element.Name = $"{elementType.ToLower()}_{DateTime.Now.Ticks}";
+
+        await OnElementDragged.InvokeAsync(element);
+    }
+
+    private string GetIconForType(string elementType) => elementType switch
+    {
+        "TextBox" => "fa fa-font",
+        "DropDown" => "fa fa-list",
+        "DatePicker" => "fa fa-calendar",
+        _ => "fa fa-square"
+    };
+}
+
+<style>
+    .toolbox-container {
+        border: 1px solid #ccc;
+        padding: 15px;
+        margin-bottom: 20px;
+        background-color: #f9f9f9;
+    }
+
+    .toolbox-elements {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .toolbox-element {
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        padding: 12px;
+        cursor: grab;
+        background-color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+    }
+
+        .toolbox-element:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .toolbox-element i {
+            color: #007bff;
+            font-size: 18px;
+        }
+</style>

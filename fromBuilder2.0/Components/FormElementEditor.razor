@@ -1,0 +1,282 @@
+﻿@using fromBuilder2.Models
+
+<div class="property-editor">
+    <h3>Properties: @Element.Type</h3>
+
+    <div class="mb-3">
+        <label class="form-label">Label</label>
+        <DxTextBox @bind-Text="@Element.Label"
+                   NullText="Enter label"
+                   ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Name</label>
+        <DxTextBox @bind-Text="@Element.Name"
+                   NullText="Enter field name"
+                   ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" />
+    </div>
+
+    <div class="mb-3">
+        <DxCheckBox @bind-Checked="@Element.Required" Text="Required" />
+    </div>
+
+    @switch (Element.Type)
+    {
+        case "TextBox":
+            var textBox = Element as TextBoxElement;
+            if (textBox != null)
+            {
+                <div class="mb-3">
+                    <label class="form-label">Placeholder</label>
+                    <DxTextBox @bind-Text="@textBox.Placeholder"
+                               NullText="Enter placeholder text"
+                               ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" />
+                </div>
+
+                <div class="mb-3">
+                    <DxCheckBox @bind-Checked="@textBox.Multiline" Text="Multiline" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Max Length</label>
+                    <DxSpinEdit @bind-Value="@textBox.MaxLength"
+                                NullText="No limit"
+                                MinValue="0" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Input Mode</label>
+                    <DxComboBox Data="@InputModes"
+                                @bind-Value="@textBox.InputMode"
+                                NullText="Select input mode" />
+                </div>
+            }
+            break;
+
+        case "DropDown":
+            var dropDown = Element as DropDownElement;
+            if (dropDown != null)
+            {
+                <div class="mb-3">
+                    <DxCheckBox @bind-Checked="@dropDown.AllowMultiple" Text="Allow Multiple Selection" />
+                </div>
+
+                <h4 class="mb-2">Options</h4>
+                @for (int i = 0; i < dropDown.Options.Count; i++)
+                {
+                    var option = dropDown.Options[i];
+                    var index = i;
+
+                    <div class="option-row mb-2">
+                        <DxTextBox @bind-Text="@option.Label"
+                                   NullText="Label"
+                                   CssClass="option-label" />
+
+                        <DxTextBox @bind-Text="@option.Value"
+                                   NullText="Value"
+                                   CssClass="option-value" />
+
+                        <DxButton RenderStyle="ButtonRenderStyle.Danger"
+                                  Click="@(() => RemoveOption(dropDown, index))"
+                                  CssClass="option-remove">
+                            <span>&times;</span>
+                        </DxButton>
+                    </div>
+                }
+
+                <DxButton Text="Add Option"
+                          RenderStyle="ButtonRenderStyle.Secondary"
+                          Click="@(() => AddOption(dropDown))"
+                          CssClass="mt-2" />
+            }
+            break;
+
+        case "DatePicker":
+            var datePicker = Element as DatePickerElement;
+            if (datePicker != null)
+            {
+                <div class="mb-3">
+                    <label class="form-label">Format</label>
+                    <DxTextBox @bind-Text="@datePicker.Format"
+                               NullText="Date format"
+                               ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Min Date</label>
+                    <DxDateEdit @bind-Date="@datePicker.MinDate"
+                                NullText="No min date"
+                                ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Max Date</label>
+                    <DxDateEdit @bind-Date="@datePicker.MaxDate"
+                                NullText="No max date"
+                                ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto" />
+                </div>
+            }
+            break;
+    }
+
+    <h4 class="mt-4 mb-2">Validation Rules</h4>
+    @foreach (var rule in Element.ValidationRules)
+    {
+        <div class="rule-row mb-2">
+            <div class="rule-type">@rule.Type</div>
+            <div class="rule-value">
+                @if (rule.Value != null)
+                {
+                    <span>@rule.Value.ToString()</span>
+                }
+            </div>
+            <div class="rule-message">@rule.Message</div>
+            <DxButton RenderStyle="ButtonRenderStyle.Danger"
+                      Click="@(() => RemoveValidationRule(rule))"
+                      CssClass="rule-remove">
+                <span>&times;</span>
+            </DxButton>
+        </div>
+    }
+
+    <div class="add-validation-rule mt-2">
+        <DxComboBox Data="@ValidationRuleTypes"
+                    @bind-Value="@NewValidationType"
+                    NullText="Select rule type"
+                    CssClass="mb-2" />
+
+        <DxTextBox @bind-Text="@NewValidationValue"
+                   NullText="Value"
+                   CssClass="mb-2" />
+
+        <DxTextBox @bind-Text="@NewValidationMessage"
+                   NullText="Error message"
+                   CssClass="mb-2" />
+
+        <DxButton Text="Add Rule"
+                  RenderStyle="ButtonRenderStyle.Secondary"
+                  Click="AddValidationRule" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public FormElement Element { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback OnPropertyChanged { get; set; }
+
+    private List<string> InputModes = new() { "text", "email", "tel", "url", "number", "search", "password" };
+    private List<string> ValidationRuleTypes = new() { "required", "min", "max", "minLength", "maxLength", "pattern", "email" };
+
+    private string NewValidationType = string.Empty;
+    private string NewValidationValue = string.Empty;
+    private string NewValidationMessage = string.Empty;
+
+    private async Task NotifyChange()
+    {
+        await OnPropertyChanged.InvokeAsync();
+    }
+
+    private void AddOption(DropDownElement dropDown)
+    {
+        dropDown.Options.Add(new DropDownOption
+            {
+                Label = $"Option {dropDown.Options.Count + 1}",
+                Value = $"option{dropDown.Options.Count + 1}"
+            });
+
+        NotifyChange();
+    }
+
+    private void RemoveOption(DropDownElement dropDown, int index)
+    {
+        if (index >= 0 && index < dropDown.Options.Count)
+        {
+            dropDown.Options.RemoveAt(index);
+            NotifyChange();
+        }
+    }
+
+    private void AddValidationRule()
+    {
+        if (string.IsNullOrWhiteSpace(NewValidationType))
+            return;
+
+        var rule = new ValidationRule
+            {
+                Type = NewValidationType,
+                Message = string.IsNullOrWhiteSpace(NewValidationMessage)
+                    ? $"Value does not meet {NewValidationType} validation"
+                    : NewValidationMessage
+            };
+
+        if (!string.IsNullOrWhiteSpace(NewValidationValue))
+        {
+            // Convert value to appropriate type based on validation type
+            rule.Value = NewValidationType switch
+            {
+                "min" or "max" => decimal.TryParse(NewValidationValue, out var num) ? num : null,
+                "minLength" or "maxLength" => int.TryParse(NewValidationValue, out var num) ? num : null,
+                "pattern" => NewValidationValue,
+                _ => NewValidationValue
+            };
+        }
+
+        Element.ValidationRules.Add(rule);
+
+        // Reset inputs
+        NewValidationType = string.Empty;
+        NewValidationValue = string.Empty;
+        NewValidationMessage = string.Empty;
+
+        NotifyChange();
+    }
+
+    private void RemoveValidationRule(ValidationRule rule)
+    {
+        Element.ValidationRules.Remove(rule);
+        NotifyChange();
+    }
+}
+
+<style>
+    .property-editor {
+        border: 1px solid #ccc;
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    .option-row, .rule-row {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+
+    .option-label, .option-value {
+        flex: 1;
+    }
+
+    .option-remove, .rule-remove {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .rule-type, .rule-value, .rule-message {
+        padding: 5px;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+        margin-right: 5px;
+        font-size: 0.8rem;
+    }
+
+    .rule-type {
+        font-weight: bold;
+        background-color: #e9ecef;
+    }
+</style>
