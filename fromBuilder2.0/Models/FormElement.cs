@@ -1,4 +1,5 @@
-﻿namespace fromBuilder2.Models
+﻿using System.Collections.Generic;
+namespace fromBuilder2.Models
 {
     public class FormElement
     {
@@ -11,12 +12,13 @@
         public object? DefaultValue { get; set; }
         public List<ValidationRule> ValidationRules { get; set; } = new List<ValidationRule>();
         public Dictionary<string, object> AdditionalProperties { get; set; } = new Dictionary<string, object>();
-
         // Added responsive layout properties
         public int ColSpanXS { get; set; } = 12;
         public int ColSpanSM { get; set; } = 6;
         public int ColSpanMD { get; set; } = 6;
         public int ColSpanLG { get; set; } = 4;
+        public int ColSpanXL { get; set; } = 3;
+        public int ColSpanXXL { get; set; } = 3;
     }
 
     public class ValidationRule
@@ -62,6 +64,45 @@
         public DateTime? MinDate { get; set; }
         public DateTime? MaxDate { get; set; }
         public string Format { get; set; } = "MM/dd/yyyy";
+    }
+
+    public class ContainerElement : FormElement
+    {
+        public ContainerElement()
+        {
+            Type = "Container";
+        }
+
+        // Defines the layout/styling of the container
+        public ContainerLayout Layout { get; set; } = new ContainerLayout();
+
+        // Nested form elements inside this container
+        public List<FormElement> Children { get; set; } = new List<FormElement>();
+    }
+
+    // Additional class to define container-specific layout properties
+    public class ContainerLayout
+    {
+        // Container type (row, column, grid, etc.)
+        public string ContainerType { get; set; } = "row";
+
+        // Spacing between child elements
+        public int Spacing { get; set; } = 16; // Default spacing in pixels
+
+        // Background color of the container
+        public string? BackgroundColor { get; set; }
+
+        // Padding within the container
+        public int Padding { get; set; } = 16; // Default padding in pixels
+
+        // Border properties
+        public bool HasBorder { get; set; } = false;
+        public string? BorderColor { get; set; }
+        public int BorderWidth { get; set; } = 1;
+        public string? BorderStyle { get; set; } = "solid";
+
+        // Border radius for rounded corners
+        public int BorderRadius { get; set; } = 0;
     }
 
     public class FormSchema

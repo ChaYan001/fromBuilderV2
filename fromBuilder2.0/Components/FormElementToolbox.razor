@@ -2,7 +2,6 @@
 @using fromBuilder2.Services
 @inject IFormSchemaService SchemaService
 @inject IJSRuntime JSRuntime
-
 <div class="toolbox-container">
     <h3>Form Elements</h3>
     <div class="toolbox-elements">
@@ -18,13 +17,10 @@
         }
     </div>
 </div>
-
 @code {
     [Parameter]
     public EventCallback<FormElement> OnElementDragged { get; set; }
-
-    private List<string> ElementTypes = new() { "TextBox", "DropDown", "DatePicker" };
-
+    private List<string> ElementTypes = new() { "TextBox", "DropDown", "DatePicker", "Container" };
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -33,29 +29,44 @@
             await JSRuntime.InvokeVoidAsync("console.log", "FormElementToolbox rendered");
         }
     }
-
     private async Task OnDragStart(DragEventArgs args, string elementType)
     {
         Console.WriteLine($"Dragging element: {elementType}");
-
         var element = SchemaService.CreateElementFromType(elementType);
-
         // Set default properties
         element.Label = $"New {elementType}";
         element.Name = $"{elementType.ToLower()}_{DateTime.Now.Ticks}";
 
+        // Special handling for Container
+        if (elementType == "Container")
+        {
+            // Use AdditionalProperties instead of Properties
+            element.AdditionalProperties ??= new Dictionary<string, object>();
+            element.AdditionalProperties["Children"] = new List<FormElement>();
+
+            // If it's a ContainerElement, set some default layout properties
+            if (element is ContainerElement containerElement)
+            {
+                containerElement.Layout = new ContainerLayout
+                    {
+                        ContainerType = "row",
+                        Spacing = 16,
+                        Padding = 16
+                    };
+            }
+        }
+
         await OnElementDragged.InvokeAsync(element);
     }
-
     private string GetIconForType(string elementType) => elementType switch
     {
         "TextBox" => "fa fa-font",
         "DropDown" => "fa fa-list",
         "DatePicker" => "fa fa-calendar",
+        "Container" => "fa fa-square-o",
         _ => "fa fa-square"
     };
 }
-
 <style>
     .toolbox-container {
         border: 1px solid #ccc;

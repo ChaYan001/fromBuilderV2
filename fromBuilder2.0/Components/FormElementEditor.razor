@@ -156,6 +156,24 @@
                             ShowSpinButtons="true"
                             CssClass="responsive-spin" />
             </div>
+            <div class="responsive-layout-item">
+                <label class="form-label">XL <small>(Large Desktop)</small></label>
+                <DxSpinEdit @bind-Value="@Element.ColSpanXL"
+                            MinValue="1"
+                            MaxValue="12"
+                            Step="1"
+                            ShowSpinButtons="true"
+                            CssClass="responsive-spin" />
+            </div>
+            <div class="responsive-layout-item">
+                <label class="form-label">XXL <small>(Extra Large Desktop)</small></label>
+                <DxSpinEdit @bind-Value="@Element.ColSpanXXL"
+                            MinValue="1"
+                            MaxValue="12"
+                            Step="1"
+                            ShowSpinButtons="true"
+                            CssClass="responsive-spin" />
+            </div>
         </div>
         <div class="responsive-layout-hint">
             <i class="fa fa-info-circle"></i>
@@ -224,6 +242,8 @@
         if (Element.ColSpanSM <= 0) Element.ColSpanSM = 6;
         if (Element.ColSpanMD <= 0) Element.ColSpanMD = 6;
         if (Element.ColSpanLG <= 0) Element.ColSpanLG = 4;
+        if (Element.ColSpanXL <= 0) Element.ColSpanXL = 3;
+        if (Element.ColSpanXXL <= 0) Element.ColSpanXXL = 3;
     }
 
     private async Task NotifyChange()

@@ -5,27 +5,61 @@
 
 <div class="form-builder-container">
     <div class="row">
-        <div class="col-md-3">
-            <div class="toolbox-panel">
-                <h3 class="panel-title">Form Elements</h3>
-                <p class="panel-subtitle">Drag elements to the canvas</p>
+        <!-- Toolbox Panel -->
+        <div class="@(IsToolboxCollapsed ? "col-md-1" : "col-md-3")">
+            <div class="toolbox-panel @(IsToolboxCollapsed ? "collapsed" : "")">
+                <div class="toolbox-header">
+                    <DxButton IconCssClass="@(IsToolboxCollapsed ? "fa fa-chevron-right" : "fa fa-chevron-left")"
+                              CssClass="collapse-button"
+                              RenderStyle="ButtonRenderStyle.Light"
+                              Click="@ToggleToolbox" />
 
-                <div class="drag-elements">
-                    @foreach (var elementType in ElementTypes)
+                    @if (!IsToolboxCollapsed)
                     {
-                        <div class="drag-element"
-                             draggable="true"
-                             @ondragstart="@(e => HandleDragStart(e, elementType))"
-                             @key="elementType">
-                            <i class="@GetIconForType(elementType)" aria-hidden="true"></i>
-                            <span>@elementType</span>
-                        </div>
+                        <h3 class="panel-title">Form Elements</h3>
                     }
                 </div>
+
+                @if (!IsToolboxCollapsed)
+                {
+                    <p class="panel-subtitle">Drag elements to the canvas</p>
+                    <div class="drag-elements">
+                        @foreach (var elementType in ElementTypes)
+                        {
+                            <div class="drag-element"
+                                 draggable="true"
+                                 @ondragstart="@(e => HandleDragStart(e, elementType))"
+                                 @key="elementType">
+                                <i class="@GetIconForType(elementType)" aria-hidden="true"></i>
+                                <span>@elementType</span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="collapsed-elements">
+                        @foreach (var elementType in ElementTypes)
+                        {
+                            <div class="collapsed-element"
+                                 draggable="true"
+                                 @ondragstart="@(e => HandleDragStart(e, elementType))"
+                                 title="@elementType"
+                                 @key="elementType">
+                                <i class="@GetIconForType(elementType)" aria-hidden="true"></i>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
 
-        <div class="col-md-@(ShowPropertiesPanel && SelectedElement != null ? "5" : "4")">
+        <!-- Canvas Panel -->
+        <div class="@(IsToolboxCollapsed ?
+                ("col-md-" + (ShowPropertiesPanel && SelectedElement != null ? "6" : "6")) :
+                ("col-md-" + (ShowPropertiesPanel && SelectedElement != null ? "5" : "4"))
+            )">
+
             <div class="form-canvas"
                  @ondragover="HandleDragOver"
             @ondragover:preventDefault
@@ -43,60 +77,7 @@
                 else
                 {
                     <DxFormLayout>
-                        @foreach (var element in FormElements)
-                        {
-                            <DxFormLayoutItem ColSpanXs="@element.ColSpanXS"
-                                              ColSpanSm="@element.ColSpanSM"
-                                              ColSpanMd="@element.ColSpanMD"
-                                              ColSpanLg="@element.ColSpanLG"
-                                              CssClass="form-element-wrapper">
-                                <div class="form-element-container @(SelectedElement == element ? "selected" : "")"
-                                     @onclick="() => SelectElement(element)"
-                                     @ondblclick="() => OpenPropertiesPanel(element)"
-                                     @key="element.Id">
-                                    <div class="form-element-header">
-                                        <div class="element-info">
-                                            <i class="@GetIconForType(element.Type)" aria-hidden="true"></i>
-                                            <span>@element.Label</span>
-                                        </div>
-                                        <button type="button" class="element-remove" @onclick:stopPropagation="true" @onclick="() => RemoveElement(element)">
-                                            <span>&times;</span>
-                                        </button>
-                                    </div>
-
-                                    <div class="form-element-preview">
-                                        @switch (element.Type)
-                                        {
-                                            case "TextBox":
-                                                <DxTextBox NullText="@((element as TextBoxElement)?.Placeholder ?? "Enter text")"
-                                                           Enabled="false" />
-                                                break;
-                                            case "DropDown":
-                                                <DxComboBox TData="DropDownOption"
-                                                            TValue="string"
-                                                            Data="@((element as DropDownElement)?.Options ?? new List<DropDownOption>())"
-                                                            TextFieldName="Label"
-                                                            ValueFieldName="Value"
-                                                            NullText="Select an option"
-                                                            Enabled="false" />
-                                                break;
-                                            case "DatePicker":
-                                                <DxDateEdit Date="DateTime.Now"
-                                                            Enabled="false" />
-                                                break;
-                                            default:
-                                                <div>Unknown element type: @element.Type</div>
-                                                break;
-                                        }
-                                    </div>
-
-                                    @if (element.Required)
-                                    {
-                                        <div class="required-indicator">Required</div>
-                                    }
-                                </div>
-                            </DxFormLayoutItem>
-                        }
+                        @RenderFormElements(FormElements, false)
                     </DxFormLayout>
                 }
             </div>
@@ -109,7 +90,12 @@
             </div>
         </div>
 
-        <div class="col-md-@(ShowPropertiesPanel && SelectedElement != null ? "4" : "5")">
+        <!-- Properties/Preview Panel -->
+        <div class="@(IsToolboxCollapsed ?
+                ("col-md-" + (ShowPropertiesPanel && SelectedElement != null ? "5" : "5")) :
+                ("col-md-" + (ShowPropertiesPanel && SelectedElement != null ? "4" : "5"))
+            )">
+
             @if (ShowPropertiesPanel && SelectedElement != null)
             {
                 <div class="properties-panel">
@@ -139,44 +125,7 @@
                         else
                         {
                             <DxFormLayout>
-                                @foreach (var element in FormElements)
-                                {
-                                    <DxFormLayoutItem ColSpanXs="@element.ColSpanXS"
-                                                      ColSpanSm="@element.ColSpanSM"
-                                                      ColSpanMd="@element.ColSpanMD"
-                                                      ColSpanLg="@element.ColSpanLG"
-                                                      Caption="@element.Label">
-                                        @switch (element.Type)
-                                        {
-                                            case "TextBox":
-                                                var textBox = element as TextBoxElement;
-                                                <DxTextBox NullText="@(textBox?.Placeholder ?? "")"
-                                                           Enabled="true" />
-                                                break;
-                                            case "DropDown":
-                                                var dropDown = element as DropDownElement;
-                                                <DxComboBox TData="DropDownOption"
-                                                            TValue="string"
-                                                            Data="@(dropDown?.Options ?? new List<DropDownOption>())"
-                                                            TextFieldName="Label"
-                                                            ValueFieldName="Value"
-                                                            NullText="Select an option"
-                                                            Enabled="true" />
-                                                break;
-                                            case "DatePicker":
-                                                var datePicker = element as DatePickerElement;
-                                                <DxDateEdit Date="DateTime.Now"
-                                                            Format="@(datePicker?.Format ?? "MM/dd/yyyy")"
-                                                            Enabled="true" />
-                                                break;
-                                        }
-
-                                        @if (element.Required)
-                                        {
-                                            <div class="required-field-indicator">*</div>
-                                        }
-                                    </DxFormLayoutItem>
-                                }
+                                @RenderLivePreviewElements(FormElements)
                             </DxFormLayout>
 
                             <div class="mt-4">
@@ -209,9 +158,11 @@
     private string ExportedSchema { get; set; } = string.Empty;
     private string? DraggedElementType { get; set; }
     private bool ShowPropertiesPanel { get; set; } = false;
+    private bool IsToolboxCollapsed { get; set; } = false;
+    private ContainerElement? CurrentDropContainer { get; set; }
 
     // List of available element types
-    private List<string> ElementTypes = new() { "TextBox", "DropDown", "DatePicker" };
+    private List<string> ElementTypes = new() { "TextBox", "DropDown", "DatePicker", "Container" };
 
     [Parameter]
     public string? InitialSchema { get; set; }
@@ -223,69 +174,373 @@
     {
         if (firstRender)
         {
-            // Initialize any needed JavaScript interop
             await JSRuntime.InvokeVoidAsync("console.log", "Form Builder initialized");
+
+            if (!string.IsNullOrEmpty(InitialSchema))
+            {
+                var schema = SchemaService.ParseSchema(InitialSchema);
+                FormElements = schema.Elements;
+                StateHasChanged();
+            }
         }
     }
 
-    protected override void OnInitialized()
+    // Unified rendering method for both form and container elements with a nested flag
+    private RenderFragment RenderFormElements(List<FormElement> elements, bool isNested) => __builder =>
     {
-        if (!string.IsNullOrEmpty(InitialSchema))
+        foreach (var element in elements)
         {
-            var schema = SchemaService.ParseSchema(InitialSchema);
-            FormElements = schema.Elements;
+            <DxFormLayoutItem ColSpanXs="@element.ColSpanXS"
+                              ColSpanSm="@element.ColSpanSM"
+                              ColSpanMd="@element.ColSpanMD"
+                              ColSpanLg="@element.ColSpanLG"
+                              ColSpanXl="@element.ColSpanXL"
+                              ColSpanXxl="@element.ColSpanXXL"
+                              CssClass="@($"form-element-wrapper {(isNested ? "nested-element" : "")}")">
+                <div class="@(element.Type == "Container" ? "container-element" : "form-element-container") @(SelectedElement == element ? "selected" : "")"
+                @onclick:stopPropagation
+                     @onclick="() => SelectElement(element)"
+                @ondblclick:stopPropagation
+                     @ondblclick="() => OpenPropertiesPanel(element)"
+                     @key="element.Id"
+                @ondragover:preventDefault
+                @ondragover:stopPropagation
+                     @ondragover="() => HandleContainerDragOver(element)"
+                @ondrop:preventDefault
+                @ondrop:stopPropagation
+                     @ondrop="() => HandleContainerDrop(element)">
+                    <div class="form-element-header">
+                        <div class="element-info">
+                            <i class="@GetIconForType(element.Type)" aria-hidden="true"></i>
+                            <span>@element.Label</span>
+                        </div>
+                        <div class="element-actions">
+                            <button type="button" class="element-remove" @onclick:stopPropagation="true" @onclick="() => RemoveElement(element)">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-element-preview">
+                        @switch (element.Type)
+                        {
+                            case "TextBox":
+                                var textBox = element as TextBoxElement;
+                                <DxTextBox NullText="@(textBox?.Placeholder ?? "Enter text")"
+                                           Enabled="false" />
+                                break;
+                            case "DropDown":
+                                var dropDown = element as DropDownElement;
+                                <DxComboBox TData="DropDownOption"
+                                            TValue="string"
+                                            Data="@(dropDown?.Options ?? new List<DropDownOption>())"
+                                            TextFieldName="Label"
+                                            ValueFieldName="Value"
+                                            NullText="Select an option"
+                                            Enabled="false" />
+                                break;
+                            case "DatePicker":
+                                var datePicker = element as DatePickerElement;
+                                <DxDateEdit Date="DateTime.Now"
+                                            Format="@(datePicker?.Format ?? "MM/dd/yyyy")"
+                                            Enabled="false" />
+                                break;
+                            case "Container":
+                                var containerElement = element as ContainerElement;
+                                <div class="container-drop-zone @(isNested ? "nested-container" : "")">
+                                    @if (containerElement?.Children != null && containerElement.Children.Any())
+                                    {
+                                        <DxFormLayout>
+                                            @RenderFormElements(containerElement.Children, true)
+                                        </DxFormLayout>
+                                    }
+                                    else
+                                    {
+                                        <div class="drop-zone-placeholder">Drop elements here</div>
+                                    }
+                                </div>
+                                break;
+                            default:
+                                <div>Unknown element type: @element.Type</div>
+                                break;
+                        }
+                    </div>
+
+                    @if (element.Required)
+                    {
+                        <div class="required-indicator">Required</div>
+                    }
+                </div>
+            </DxFormLayoutItem>
         }
+    };
+
+    // Rendering method for live preview elements
+    private RenderFragment RenderLivePreviewElements(List<FormElement> elements) => __builder =>
+    {
+        foreach (var element in elements)
+        {
+            <DxFormLayoutItem ColSpanXs="@element.ColSpanXS"
+                              ColSpanSm="@element.ColSpanSM"
+                              ColSpanMd="@element.ColSpanMD"
+                              ColSpanLg="@element.ColSpanLG"
+                              ColSpanXl="@element.ColSpanXL"
+                              ColSpanXxl="@element.ColSpanXXL"
+                              Caption="@element.Label">
+                @switch (element.Type)
+                {
+                    case "TextBox":
+                        var textBox = element as TextBoxElement;
+                        <DxTextBox NullText="@(textBox?.Placeholder ?? "")"
+                                   Enabled="true" />
+                        break;
+                    case "DropDown":
+                        var dropDown = element as DropDownElement;
+                        <DxComboBox TData="DropDownOption"
+                                    TValue="string"
+                                    Data="@(dropDown?.Options ?? new List<DropDownOption>())"
+                                    TextFieldName="Label"
+                                    ValueFieldName="Value"
+                                    NullText="Select an option"
+                                    Enabled="true" />
+                        break;
+                    case "DatePicker":
+                        var datePicker = element as DatePickerElement;
+                        <DxDateEdit Date="DateTime.Now"
+                                    Format="@(datePicker?.Format ?? "MM/dd/yyyy")"
+                                    Enabled="true" />
+                        break;
+                    case "Container":
+                        var containerElement = element as ContainerElement;
+                        <div class="container-live-preview container-with-border">
+                            <DxFormLayout CssClass="container-layout">
+                                @if (containerElement?.Children != null)
+                                {
+                                    @RenderLivePreviewElements(containerElement.Children)
+                                }
+                                else
+                                {
+                                    <div class="empty-container-message">Container Area</div>
+                                }
+                            </DxFormLayout>
+                        </div>
+                        break;
+                }
+
+                @if (element.Required)
+                {
+                    <div class="required-field-indicator">*</div>
+                }
+            </DxFormLayoutItem>
+        }
+    };
+
+    private void ToggleToolbox()
+    {
+        IsToolboxCollapsed = !IsToolboxCollapsed;
+        StateHasChanged();
     }
 
     private void HandleDragStart(DragEventArgs args, string elementType)
     {
-        Console.WriteLine($"Starting drag for {elementType}");
         DraggedElementType = elementType;
+        DraggedElement = null;  // Reset dragged element
+        CurrentDropContainer = null;
     }
 
-    private void HandleDragOver()
+    private void HandleDragOver(DragEventArgs e)
     {
-        // Visual feedback can be added here if needed
+        // Reset current drop container if dragging over main canvas
+        CurrentDropContainer = null;
+    }
+
+    private void HandleContainerDragOver(FormElement element)
+    {
+        // Set current drop container if the dragged element is over a container
+        CurrentDropContainer = element as ContainerElement;
+    }
+
+    // Create a new element based on type
+    private FormElement CreateElementByType(string elementType)
+    {
+        FormElement element = elementType switch
+        {
+            "TextBox" => new TextBoxElement(),
+            "DropDown" => new DropDownElement(),
+            "DatePicker" => new DatePickerElement(),
+            "Container" => new ContainerElement(),
+            _ => throw new ArgumentException($"Unknown element type: {elementType}")
+        };
+
+        // Set default properties
+        element.Label = elementType == "Container" ? "" : $"New {elementType}";
+        element.Name = $"{elementType.ToLower()}_{DateTime.Now.Ticks}";
+
+        return element;
     }
 
     private void HandleDrop()
     {
-        Console.WriteLine($"Drop detected with element type: {DraggedElementType}");
-
+        // Adding a new element
         if (!string.IsNullOrEmpty(DraggedElementType))
         {
-            var element = SchemaService.CreateElementFromType(DraggedElementType);
+            var element = CreateElementByType(DraggedElementType);
 
-            // Set default properties
-            element.Label = $"New {DraggedElementType}";
-            element.Name = $"{DraggedElementType.ToLower()}_{DateTime.Now.Ticks}";
+            // Add to container or root form elements
+            if (CurrentDropContainer != null)
+            {
+                CurrentDropContainer.Children ??= new List<FormElement>();
+                CurrentDropContainer.Children.Add(element);
+            }
+            else
+            {
+                FormElements.Add(element);
+            }
 
-            // Set default responsive column spans
-            element.ColSpanXS = 12;
-            element.ColSpanSM = 6;
-            element.ColSpanMD = 6;
-            element.ColSpanLG = 4;
+            // Select the newly added element
+            SelectElement(element);
+            OpenPropertiesPanel(element);
 
-            FormElements.Add(element);
             NotifySchemaChanged();
-
-            // Clear the dragged element type
             DraggedElementType = null;
-
-            StateHasChanged();
         }
+        // Moving an existing element
         else if (DraggedElement != null)
         {
-            FormElements.Add(DraggedElement);
-            NotifySchemaChanged();
+            // Handle moving existing elements
+            if (CurrentDropContainer != null)
+            {
+                // Prevent dropping a container into itself or its children
+                if (DraggedElement != CurrentDropContainer && !IsNestedInside(DraggedElement, CurrentDropContainer))
+                {
+                    CurrentDropContainer.Children ??= new List<FormElement>();
+                    RemoveElementFromParent(DraggedElement);
+                    CurrentDropContainer.Children.Add(DraggedElement);
+                    NotifySchemaChanged();
+                }
+            }
+            else
+            {
+                // If not dropped in a container, add to root elements
+                RemoveElementFromParent(DraggedElement);
+                FormElements.Add(DraggedElement);
+                NotifySchemaChanged();
+            }
+
             DraggedElement = null;
-            StateHasChanged();
+        }
+
+        CurrentDropContainer = null;
+        StateHasChanged();
+    }
+
+    private void HandleContainerDrop(FormElement element)
+    {
+        var containerElement = element as ContainerElement;
+        if (containerElement == null) return;
+
+        // Adding a new element
+        if (!string.IsNullOrEmpty(DraggedElementType))
+        {
+            var newElement = CreateElementByType(DraggedElementType);
+
+            containerElement.Children ??= new List<FormElement>();
+            containerElement.Children.Add(newElement);
+
+            // Select the newly added element
+            SelectElement(newElement);
+            OpenPropertiesPanel(newElement);
+
+            NotifySchemaChanged();
+            DraggedElementType = null;
+        }
+        // Moving an existing element
+        else if (DraggedElement != null)
+        {
+            // Prevent dropping a container into itself or its children
+            if (DraggedElement != containerElement && !IsNestedInside(DraggedElement, containerElement))
+            {
+                // Remove the element from its original location
+                RemoveElementFromParent(DraggedElement);
+
+                // Add to the target container
+                containerElement.Children ??= new List<FormElement>();
+                containerElement.Children.Add(DraggedElement);
+
+                NotifySchemaChanged();
+                DraggedElement = null;
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    // Check if an element is nested inside a container
+    private bool IsNestedInside(FormElement potentialParent, FormElement potentialChild)
+    {
+        if (potentialParent is ContainerElement container && container.Children != null)
+        {
+            foreach (var child in container.Children)
+            {
+                if (child == potentialChild)
+                {
+                    return true;
+                }
+
+                if (child is ContainerElement childContainer && IsNestedInside(childContainer, potentialChild))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void RemoveElementFromParent(FormElement element)
+    {
+        // Try to remove from root elements first
+        if (FormElements.Remove(element))
+        {
+            return;
+        }
+
+        // Search in containers recursively
+        foreach (var rootElement in FormElements)
+        {
+            if (rootElement is ContainerElement container)
+            {
+                if (RemoveElementFromContainer(container, element))
+                {
+                    break;
+                }
+            }
         }
     }
 
-    private void HandleElementDragged(FormElement element)
+    private bool RemoveElementFromContainer(ContainerElement container, FormElement elementToRemove)
     {
-        DraggedElement = element;
+        if (container.Children == null)
+            return false;
+
+        // Direct child removal
+        if (container.Children.Remove(elementToRemove))
+        {
+            return true;
+        }
+
+        // Recursive search in nested containers
+        foreach (var childElement in container.Children.ToList())
+        {
+            if (childElement is ContainerElement nestedContainer)
+            {
+                if (RemoveElementFromContainer(nestedContainer, elementToRemove))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private void SelectElement(FormElement element)
@@ -309,7 +564,8 @@
 
     private void RemoveElement(FormElement element)
     {
-        FormElements.Remove(element);
+        // Remove from root elements or from parent container
+        RemoveElementFromParent(element);
 
         if (SelectedElement == element)
         {
@@ -318,11 +574,13 @@
         }
 
         NotifySchemaChanged();
+        StateHasChanged();
     }
 
     private void HandlePropertyChanged()
     {
         NotifySchemaChanged();
+        StateHasChanged();
     }
 
     private async void NotifySchemaChanged()
@@ -342,11 +600,71 @@
         "TextBox" => "fa fa-font",
         "DropDown" => "fa fa-list",
         "DatePicker" => "fa fa-calendar",
+        "Container" => "fa fa-object-group",
         _ => "fa fa-square"
     };
 }
 
 <style>
+    /* Toolbox Collapse Styles */
+    .toolbox-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .collapse-button {
+        margin-right: 0.5rem;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        transition: all 0.3s ease;
+    }
+
+    .toolbox-panel.collapsed {
+        padding: 10px;
+    }
+
+        .toolbox-panel.collapsed .panel-title {
+            display: none;
+        }
+
+    .collapsed-elements {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .collapsed-element {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: white;
+        border: 2px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        transition: all 0.2s ease;
+    }
+
+        .collapsed-element:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .collapsed-element i {
+            color: #3b82f6;
+            font-size: 1.125rem;
+        }
+
     /* Properties Panel Styles */
     .properties-panel {
         border: 1px solid #dee2e6;
@@ -488,10 +806,11 @@
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         margin-bottom: 20px;
         height: 100%;
+        transition: all 0.3s ease;
     }
 
     .panel-title {
-        margin-top: 0;
+        margin-top: 8px;
         color: #1f2937;
         font-size: 1.25rem;
     }
@@ -535,6 +854,7 @@
     /* Form canvas styling */
     .form-canvas {
         min-height: 600px;
+        height:100%;
         border: 2px dashed #d1d5db;
         padding: 20px;
         border-radius: 8px;
@@ -633,7 +953,6 @@
         }
 
     .form-element-preview {
-        padding: 10px;
         background-color: #f9fafb;
         border-radius: 4px;
     }
@@ -662,9 +981,63 @@
     }
 
     /* Make the columns equal height */
-    .col-md-3, .col-md-4, .col-md-5 {
+    .col-md-1, .col-md-3, .col-md-4, .col-md-5, .col-md-6 {
         display: flex;
         flex-direction: column;
+        transition: all 0.3s ease;
+    }
+
+    .container-element {
+        position: relative;
+        padding: 5px;
+        border: 1px dashed #007bff;
+        background-color: rgba(0, 123, 255, 0.05);
+        border-radius: 4px;
+        margin-bottom: 10px;
+        transition: all 0.2s ease;
+    }
+
+        .container-element.selected {
+            border: 2px solid #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+    .container-drop-zone {
+        border: 2px dashed #ccc;
+        border-radius: 4px;
+        padding: 6px;
+        min-height: 110px;
+        margin-bottom: 0px;
+        background-color: rgba(240, 240, 240, 0.5);
+    }
+
+    .nested-container.container-drop-zone {
+        border-color: #aaa;
+        background-color: rgba(230, 230, 230, 0.5);
+    }
+
+    .drop-zone-placeholder {
+        text-align: center;
+        color: #888;
+        padding: 20px;
+        font-style: italic;
+    }
+
+    .container-with-border {
+        border: 2px solid #007bff;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: rgba(240, 248, 255, 0.3);
+    }
+
+    .empty-container-message {
+        text-align: center;
+        color: #666;
+        padding: 15px;
+        font-style: italic;
+        background-color: rgba(0, 123, 255, 0.05);
+        border-radius: 4px;
     }
 
 </style>
